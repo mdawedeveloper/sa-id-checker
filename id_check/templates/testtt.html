@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SA ID Number Check</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full height of viewport */
+        }
+
+        .container {
+            width: 95%;
+            max-width: 90%;
+            height: 95%; /* Occupies most of the viewport height */
+            background: #ffffff;
+            border-radius: 2%;
+            box-shadow: 0 2% 5% rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; /* Adjusted column proportions */
+            gap: 2%;
+            padding: 2%;
+            box-sizing: border-box;
+        }
+
+        .header {
+            grid-column: 1 / -1; /* Spans both columns */
+            text-align: center;
+            margin-bottom: 1.5%;
+        }
+
+        .header h1 {
+            color: #005A9C;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1%;
+            font-size: 120%;
+        }
+
+        .header .flag {
+            width: 4%;
+            height: auto;
+        }
+
+        .description {
+            grid-column: 1 / -1; /* Spans both columns */
+            background-color: #e9f5ff;
+            border-left: 1% solid #005A9C;
+            border-radius: 1%;
+            padding: 1%;
+            font-size: 90%;
+            margin-bottom: 1.5%;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 5%;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1%;
+            align-items: center;
+            padding: 2%;
+            background-color: #f9f9f9;
+            border-radius: 1%;
+        }
+
+        .form-row input[type="text"] {
+            flex: 1;
+            padding: 2%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 100%;
+        }
+
+        .form-row button {
+            background-color: #005A9C;
+            color: white;
+            border: none;
+            padding: 2%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 100%;
+            transition: background-color 0.3s ease;
+        }
+
+        .form-row button:hover {
+            background-color: #003f70;
+        }
+
+        .form-row button[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .chart-container {
+            background-color: #f1f1f1;
+            border-radius: 1%;
+            padding: 1%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #line-chart {
+            width: 90%;
+            height: 300px; /* Fixed height for better proportions */
+        }
+
+        .right-column {
+            background-color: #f1f1f1;
+            border-radius: 1%;
+            padding: 2%;
+            overflow-y: auto; /* Allow scrolling for overflow content */
+        }
+
+        .right-column h2, .right-column h3 {
+            color: #005A9C;
+            margin-bottom: 1.5%;
+        }
+
+        .right-column ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .right-column li {
+            background-color: #ffffff;
+            padding: 1%;
+            border-radius: 1%;
+            margin-bottom: 1.5%;
+        }
+
+        /* Responsive Design for Smaller Devices */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr; /* Switch to single-column layout */
+                grid-template-rows: auto;
+            }
+
+            .header h1 {
+                font-size: 110%;
+            }
+
+            .chart-container, .right-column {
+                height: auto;
+            }
+
+            #line-chart {
+                width: 100%;
+                height: 250px; /* Adjusted height for smaller screens */
+            }
+        }
+    </style>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/a/af/Flag_of_South_Africa.svg" alt="South African Flag" class="flag">
+                Check Public Holidays for Your South African ID Number
+            </h1>
+        </div>
+
+        <div class="description">
+            <p>
+                Enter your South African ID number to check whether your date of birth falls on a public holiday.
+                Discover fun insights about your ID and view key details instantly!
+            </p>
+        </div>
+
+        <!-- Left Column -->
+        <div class="left-column">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-row">
+                    <input type="text" name="id_number" placeholder="Enter ID Number" required>
+                    <button type="submit" {% if form.id_number.errors %} disabled {% endif %}>Search</button>
+                </div>
+            </form>
+
+            <div class="chart-container">
+                <div id="line-chart"></div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            {% if result %}
+                <h2>Results for ID: {{ result.id_info.id_number }}</h2>
+                <p><strong>Date of Birth:</strong> {{ result.id_info.date_of_birth }}</p>
+                <p><strong>Gender:</strong> {{ result.id_info.gender }}</p>
+                <p><strong>Citizenship:</strong> {{ result.id_info.is_sa_citizen|yesno:"SA Citizen, Permanent Resident" }}</p>
+                <p><strong>Search Count:</strong> {{ result.id_info.search_count }}</p>
+
+                <h3>Public Holidays</h3>
+                {% if result.holidays %}
+                    <ul>
+                        {% for holiday in result.holidays %}
+                            <li>
+                                <strong>{{ holiday.name }}:</strong> {{ holiday.date }} - {{ holiday.description }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No public holidays on your date of birth.</p>
+                {% endif %}
+            {% else %}
+                <p>Enter your ID number to view the results here.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Replace this with actual data passed from the backend
+        const chartData = {{ chart_data|safe }}; // Ensure this data is safe for rendering
+
+        Highcharts.chart('line-chart', {
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: 'Search Trends Over Time'
+            },
+            xAxis: {
+                type: 'datetime',
+                title: {
+                    text: 'Date'
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Search Count'
+                }
+            },
+            series: [{
+                name: 'Search Count',
+                data: chartData.map(entry => ({
+                    x: new Date(entry.date).getTime(),
+                    y: entry.count
+                }))
+            }]
+        });
+    </script>
+</body>
+</html>
